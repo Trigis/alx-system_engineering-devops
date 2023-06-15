@@ -1,38 +1,45 @@
 #!/usr/bin/python3
+
 """
-Queries the Reddit API and returns a list containing the titles of all hot
-articles for a given subreddit.
+importing requests module
 """
-import requests
+
+from requests import get
 
 
-def recurse(subreddit, hot_list=[], after=None):   
+def recurse(subreddit, hot_list=[], after=None):
     """
-    Queries the Reddit API and returns a list containing the titles of all hot
-    articles for a given subreddit.
+    function that queries the Reddit API and returns a list containing the
+    titles of all hot articles for a given subreddit.
     """
-    base = 'https://www.reddit.com/'
-    endpoint = 'r/{}/hot.json'.format(subreddit)
-    query_string = '?show="all"&limit=100&after={}&count={}'.format(
-        after, count)
-    url = base + endpoint + query_string
-    headers = {'User-Agent': 'Python/1.0(Holberton School 0x16 task 2)'}
-    response = requests.get(url, headers=headers)
-    if not response.ok:
-        if len(hot_list) == 0:
-            return None
-        else:
+
+    params = {'show': 'all'}
+
+    if subreddit is None or not isinstance(subreddit, str):
+        return None
+
+    user_agent = {'User-agent': 'Google Chrome Version 81.0.4044.129'}
+
+    url = 'https://www.reddit.com/r/{}/hot/.json?after={}'.format(subreddit,
+                                                                  after)
+
+    response = get(url, headers=user_agent, params=params)
+
+    if (response.status_code != 200):
+        return None
+
+    all_data = response.json()
+
+    try:
+        raw1 = all_data.get('data').get('children')
+        after = all_data.get('data').get('after')
+
+        if after is None:
             return hot_list
 
-    data = response.json()['data']
-    for post in data['children']:
-        hot_list.append(post['data']['title'])
-    after = data['after']
-    dist = data['dist']
-    if (after):
-        recurse(subreddit, hot_list, count + dist, after)
+        for i in raw1:
+            hot_list.append(i.get('data').get('title'))
 
-    if len(hot_list) == 0:
-        return None
-    else:
-        return hot_list
+        return recurse(subreddit, hot_list, after)
+    except:
+        print("None")
